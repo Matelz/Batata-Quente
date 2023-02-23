@@ -18,13 +18,13 @@ export default function Home() {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    try {
-      (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (error) {
-      console.error(error);
-    }
-  }, []);
+  // useEffect(() => {
+  //   try {
+  //     (window.adsbygoogle = window.adsbygoogle || []).push({});
+  //   } catch (error) {
+  //     console.error(error);
+  //   }
+  // }, []);
 
   function joinRoom(nick: String, code: String, pass: String) {
     if (nick === "" || pass === "") return false;
