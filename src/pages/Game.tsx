@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { io } from "socket.io-client";
 
-const socket = io("ws://palavra-quente-378622.rj.r.appspot.com:65080");
+const socket = io("http://palavra-quente-378622.rj.r.appspot.com");
 
 export default function Game() {
   interface user {
