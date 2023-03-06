@@ -30,12 +30,7 @@ export default function Home() {
     if (nick === "" || pass === "") return false;
 
     axios
-      .get(
-        `https://palavra-quente-378622.rj.r.appspot.com/join?n=${nick}&c=${code}&p=${pass}`,
-        {
-          withCredentials: true,
-        }
-      )
+      .get(`http://localhost:8080/join?n=${nick}&c=${code}&p=${pass}`)
       .then((response) => {
         toast.success(response.data);
         togglePopup(false);
@@ -63,7 +58,7 @@ export default function Home() {
 
     axios
       .post(
-        `https://palavra-quente-378622.rj.r.appspot.com/createRoom`,
+        `http://localhost:8080/createRoom`,
         {
           creator: nick,
           pass: pass,
@@ -96,16 +91,19 @@ export default function Home() {
     <div className="flex w-full h-screen bg-[url('bg.png')] bg-cover" id="bg">
       <ToastContainer />
       <div className="lg:grid lg:grid-cols-[330px_1fr_330px] flex w-full h-screen bg-rose-500 bg-opacity-70 justify-center">
-        <div className="p-10 w-full h-full items-center hidden lg:flex">
+        {/* <div className="p-10 w-full h-full items-center hidden lg:flex">
           <div
             id="ads"
             className="bg-transparent w-full h-3/4 rounded-md border-4 border-black"
           ></div>
-        </div>
+        </div> */}
         <div className="flex flex-col justify-between col-start-2 items-center">
-          <h1 className="text-5xl font-bold text-white mt-10 text-center">
-            🔥 Batata Quente 🔥
-          </h1>
+          <img
+            src="./Logo.png"
+            alt="Palavra Quente"
+            width={350}
+            className="mt-10"
+          />
           <div
             className={`w-96 h-96 bg-white duration-500 ease-in-out grid-cols-1 grid items-center shadow-home rounded-lg justify-center hover:scale-[1.02] transition-transform border-4 border-black`}
           >
@@ -237,17 +235,17 @@ export default function Home() {
           <a
             href="https://ko-fi.com/W7W3IY93R"
             target="_blank"
-            className="mb-5 font-semibold text-md text-white hover:scale-105 transition-transform"
+            className="mb-5 font-semibold text-md text-black hover:scale-105 transition-transform"
           >
             Made with ❤ by: Matt
           </a>
         </div>
-        <div className="p-10 w-full h-full items-center hidden lg:flex">
+        {/* <div className="p-10 w-full h-full items-center hidden lg:flex">
           <div
             id="ads"
             className="bg-transparent w-full h-3/4 rounded-md border-4 border-black"
           ></div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

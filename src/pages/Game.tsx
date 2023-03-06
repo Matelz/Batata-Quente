@@ -1,22 +1,38 @@
 import { Tooltip } from "@mui/material";
 import axios from "axios";
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { render } from "react-dom";
+import {
+  useAsyncError,
+  useLocation,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import { io } from "socket.io-client";
+import countDown from "../utils/GameTimer";
 
-const socket = io("http://palavra-quente-378622.rj.r.appspot.com");
+const socket = io("http://localhost:8080", {
+  transports: ["websocket"],
+});
 
 export default function Game() {
+  const tickingSFX = new Audio("/clock.ogg");
+  tickingSFX.volume = 0.2;
+  tickingSFX.loop = true;
+
   interface user {
     name: String;
     id: String;
+    life: Number;
   }
 
+  const [time, setTimer] = useState(20);
+  const [lifes, setLifes] = useState(3);
   const [users, updateUsers] = useState([]);
   const [isOwner, setOwner] = useState(false);
   const [hasStarted, startMatch] = useState(false);
   const [letter, setLetter] = useState("");
-  const [turnObj, setTurn] = useState<user>({ name: "", id: "" });
+  const [turnObj, setTurn] = useState<user>({ name: "", id: "", life: 3 });
   const [guess, setGuess] = useState("");
   const [currentGuess, setCurGuess] = useState("");
   const letters = currentGuess.split("");
@@ -40,9 +56,7 @@ export default function Game() {
       console.log(location.state.user);
 
       axios
-        .get(
-          `https://palavra-quente-378622.rj.r.appspot.com/roomData?c=${params.id}`
-        )
+        .get(`http://localhost:8080/roomData?c=${params.id}`)
         .then((response) => {
           if (response.data.members >= 6) {
             alert("A Sala está cheia");
@@ -61,34 +75,24 @@ export default function Game() {
       navigate("/", { replace: true });
       alert("Você não está logado!");
     }
-
-    socket.on("new user", (newUsers) => {
-      updateUsers(newUsers);
-    });
-
-    socket.on("user left", (leftUser) => {
-      // Remove the left user from the users array
-      updateUsers((prevUsers) => {
-        const newUsers = prevUsers.filter((user: any) => user.id !== leftUser);
-        console.log("New users:", newUsers);
-        return newUsers;
-      });
-    });
-
-    return () => {
-      socket.off("new user");
-      socket.off("user left");
-      socket.off("letters");
-      socket.off("guess word");
-    };
   }, []);
+
+  socket.on("new user", (newUsers) => {
+    updateUsers(newUsers);
+  });
+
+  socket.on("user left", (leftUser) => {
+    // Remove the left user from the users array
+    updateUsers((prevUsers) => {
+      const newUsers = prevUsers.filter((user: any) => user.id !== leftUser);
+      console.log("New users:", newUsers);
+      return newUsers;
+    });
+  });
 
   //Game Logic
   socket.on("guess word", (foda, state, turn) => {
     console.log(foda, state, turn);
-
-    setCurGuess(foda);
-    setTurn(users[turn]);
 
     if (state) {
       setColors((prevColors) => {
@@ -105,23 +109,37 @@ export default function Game() {
         const newColors = new Array(prevColors.length).fill(
           "border-red-500 text-red-500"
         );
+
         return newColors;
       });
     }
+    setCurGuess(foda);
+    setTurn(users[turn]);
   });
 
-  socket.on("letters", (letters, turn) => {
+  socket.on("letters", (letters, turn, timer) => {
+    setTimer(timer);
+    console.log("TIME = " + timer);
+    countDown(time, socket);
+
+    //AUDIO CONTROLS
+    if (timer === 20) {
+      tickingSFX.playbackRate = 1.5;
+    } else if (timer <= 16) {
+      tickingSFX.playbackRate = 1.8;
+    } else if (timer <= 10) {
+      tickingSFX.playbackRate = 2;
+    } else if (timer <= 8) {
+      tickingSFX.playbackRate = 2.5;
+    }
+
     setTurn(users[turn]);
     setLetter(letters);
-    console.log(turnObj.name + "'s turn");
-    console.log(users[turn]);
   });
 
   function startGame() {
     socket.emit("start", users, 0);
-
     startMatch(true);
-    console.log(users);
   }
 
   return (
@@ -169,8 +187,12 @@ export default function Game() {
             <div className="flex gap-5">
               {users.map((element: any, index) => (
                 <div
-                  className={`flex-col flex items-center w-20 transition-transform ${
-                    element.name === turnObj.name ? "scale-125" : "scale-100"
+                  className={`flex-col flex items-center w-20 transition-all duration-200 ${
+                    lifes <= 0 ? "filter grayscale" : ""
+                  } ${
+                    element.name === turnObj.name && lifes !== 0
+                      ? "scale-125"
+                      : "scale-100"
                   }`}
                   key={index}
                 >
@@ -179,10 +201,14 @@ export default function Game() {
                     alt="Avatar"
                     className="w-14 rounded-lg border-[3px] border-white"
                   />
-
-                  <p className="font-bold text-white text-center mt-3">
+                  <p className="font-bold text-white text-center">
                     {element.name}
                   </p>
+                  <div className="flex mt-2 transition-all duration-500 text-xs">
+                    {Array.from({ length: lifes }, (_, index) => (
+                      <p key={index}>❤</p>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
@@ -233,7 +259,8 @@ export default function Game() {
                   "guess",
                   guess.toLocaleLowerCase(),
                   letter,
-                  users.length === indexNum + 1 ? 0 : indexNum + 1
+                  users.length === indexNum + 1 ? 0 : indexNum + 1,
+                  time
                 );
 
                 setGuess("");
